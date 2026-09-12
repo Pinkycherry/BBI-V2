@@ -11,10 +11,53 @@ import {
   type IdeaRow,
 } from "./ideas-shared";
 
+/**
+ * Where the Supabase credentials may be found, in priority order.
+ *
+ * Our own two names come first. The rest are the names Vercel's Supabase
+ * integration writes when you connect the two projects from the dashboard —
+ * accepting them means the site can be wired up by clicking Connect, with the
+ * key never copied by hand or pasted anywhere.
+ */
+const URL_VARS = [
+  "IDEAVAULT_DB_URL",
+  "VITE_IDEAVAULT_DB_URL",
+  "SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "VITE_SUPABASE_URL",
+] as const;
+
+const KEY_VARS = [
+  "IDEAVAULT_DB_ANON_KEY",
+  "VITE_IDEAVAULT_DB_ANON_KEY",
+  "SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "VITE_SUPABASE_ANON_KEY",
+  "SUPABASE_PUBLISHABLE_KEY",
+] as const;
+
+function firstSet(names: readonly string[]): string | undefined {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
 export function db() {
-  const url = process.env["IDEAVAULT_DB_URL"];
-  const key = process.env["IDEAVAULT_DB_ANON_KEY"];
-  if (!url || !key) throw new Error("BBI database credentials are not configured.");
+  const url = firstSet(URL_VARS);
+  const key = firstSet(KEY_VARS);
+  if (!url || !key) {
+    // Name the missing half and the variables that would satisfy it — a bare
+    // "not configured" sends you hunting through a dashboard.
+    const missing = [!url ? `a project URL (${URL_VARS.join(" or ")})` : null,
+      !key ? `an anon key (${KEY_VARS.join(" or ")})` : null]
+      .filter(Boolean)
+      .join(" and ");
+    throw new Error(
+      `Supabase is not configured on this deployment: set ${missing}. In Vercel, add it under Settings → Environment Variables, or connect the Supabase integration, then redeploy.`,
+    );
+  }
   return createClient(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
