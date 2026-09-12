@@ -1,0 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Claude agent worktrees (local tooling, not project source)
+.claude/worktrees/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets — never commit credentials to the repo
+LOGIN_CREDENTIALS_AND_API_KEYS.md
+
+# scrollcraft local workspace (tool-generated, not app source)
+/scrollcraft/
+
+# Temporary screenshot fixtures (never committed)
+src/lib/ideas.json
+src/lib/catalog.json
+shot.mjs
+
+# Local Supabase stand-in for offline rendering (never committed)
+.localdev/
