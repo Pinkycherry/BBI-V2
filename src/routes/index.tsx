@@ -197,14 +197,14 @@ function Hero({ totalIdeas }: { totalIdeas: number }) {
       <div aria-hidden className="grid-field grid-field-fade absolute inset-0" />
 
       <div className="relative mx-auto max-w-6xl px-4">
-        <Reveal>
+        <Reveal className="reveal-hero">
           <p className="text-center text-[clamp(2.4rem,7vw,5.5rem)] leading-[0.92] font-extrabold tracking-[-0.055em]">
             IDEA<span className="accent">.</span>CHECKED<span className="accent">.</span>
           </p>
         </Reveal>
 
         {/* The five sections of a blueprint, in page order. */}
-        <Reveal delay={80}>
+        <Reveal delay={80} className="reveal-hero">
           <ol className="mx-auto mt-8 flex max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:gap-x-10">
             {STEPS.map((s) => (
               <li key={s.n} className="flex items-baseline gap-2">
@@ -216,14 +216,14 @@ function Hero({ totalIdeas }: { totalIdeas: number }) {
         </Reveal>
 
         <div className="mt-14 text-center">
-          <Reveal delay={120}>
+          <Reveal delay={120} className="reveal-hero">
             <span className="pill pill-ink max-w-full text-center text-sm whitespace-normal">
               <Check className="h-4 w-4 shrink-0 text-coral" />
               Reviewed before launch by 967 founders
             </span>
           </Reveal>
 
-          <Reveal delay={180}>
+          <Reveal delay={180} className="reveal-hero">
             <h1 className="t-display mt-7">
               From idea,
               <br />
@@ -231,7 +231,7 @@ function Hero({ totalIdeas }: { totalIdeas: number }) {
             </h1>
           </Reveal>
 
-          <Reveal delay={240}>
+          <Reveal delay={240} className="reveal-hero">
             <p className="mt-7 text-xl font-semibold sm:text-2xl">
               A free library of researched business ideas.
             </p>
@@ -243,7 +243,7 @@ function Hero({ totalIdeas }: { totalIdeas: number }) {
           </Reveal>
 
           {/* The prompt field: a real search, not a picture of one. */}
-          <Reveal delay={300}>
+          <Reveal delay={300} className="reveal-hero">
             <div className="mt-10 flex flex-col items-center justify-center gap-3 lg:flex-row">
               <Link to="/browse" className="pill pill-coral shrink-0 px-7 py-4 text-base">
                 Browse the library
@@ -320,15 +320,15 @@ function PhotoStrip({ categories }: { categories: CategoryNode[] }) {
 
   return (
     <section className="pb-20 sm:pb-28">
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 sm:gap-4 lg:justify-center">
-        {picks.map((c) => {
+      <div className="flex gap-3 overflow-x-auto px-4 pt-14 pb-16 sm:gap-4 lg:justify-center">
+        {picks.map((c, i) => {
           const img = categoryImage(c.categorySlug);
           return (
             <Link
               key={c.categorySlug}
               to="/category/$categorySlug"
               params={{ categorySlug: c.categorySlug }}
-              className="zoom-frame group relative w-[62vw] shrink-0 rounded-[var(--radius-card)] sm:w-[38vw] lg:w-[13.25rem]"
+              className={`tilt ${i % 2 === 1 ? "tilt-b" : ""} relative w-[62vw] shrink-0 overflow-hidden rounded-[var(--radius-card)] shadow-[0_18px_40px_-20px_rgb(22_22_26/0.4)] sm:w-[38vw] lg:w-[13.25rem]`}
             >
               <div className="aspect-[3/4]">
                 <img
@@ -668,7 +668,7 @@ function CtaBand() {
         <h2 className="t-section mx-auto max-w-2xl">
           You bring <span className="accent">the hustle.</span>
         </h2>
-        <Link to="/browse" className="pill pill-coral mt-9 px-7 py-4 text-base">
+        <Link to="/browse" className="pill pill-coral glow mt-9 px-7 py-4 text-base">
           Browse the library
           <ArrowUpRight className="h-4 w-4" />
         </Link>
@@ -691,7 +691,7 @@ function ChipCloud() {
 
         <div className="mt-9 flex flex-wrap justify-center gap-2.5">
           {CHIPS.map((chip, i) => (
-            <Reveal key={chip} delay={i * 35}>
+            <Reveal key={chip} delay={i * 25}>
               <span className="pill-quiet rounded-full">{chip}</span>
             </Reveal>
           ))}
@@ -709,11 +709,11 @@ function KeepExploring() {
       <div className="mx-auto max-w-6xl border-t border-rule pt-10">
         <p className="t-eyebrow">Keep exploring</p>
         <div className="mt-4 flex flex-wrap gap-x-10 gap-y-3">
-          <Link to="/browse" className="nudge inline-flex items-center gap-2 text-lg font-medium">
+          <Link to="/browse" className="nudge underline-wipe inline-flex items-center gap-2 text-lg font-medium">
             Browse every category
             <ArrowRight className="h-5 w-5" />
           </Link>
-          <Link to="/search" className="nudge inline-flex items-center gap-2 text-lg font-medium">
+          <Link to="/search" className="nudge underline-wipe inline-flex items-center gap-2 text-lg font-medium">
             Search every blueprint
             <ArrowRight className="h-5 w-5" />
           </Link>

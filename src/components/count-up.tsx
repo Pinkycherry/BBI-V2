@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
  */
 export function CountUp({
   value,
-  duration = 1400,
+  duration = 1500,
   className = "",
 }: {
   value: number;

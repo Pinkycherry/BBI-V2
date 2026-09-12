@@ -1,34 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
 /**
- * Sits over the hero and turns solid once the page moves.
+ * A floating pill, solid from first paint.
  *
- * Transparent at rest so the hero reads full-bleed; a blurred, bordered bar
- * after the first scroll so the links stay legible over photography and the
- * dark band further down.
+ * It does not flip from transparent to solid on scroll — the reference keeps
+ * one white bar the whole way down, and the constant contrast is what lets it
+ * ride over both the cream sections and the dark band without restyling.
  */
 export function SiteHeader() {
-  const [stuck, setStuck] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setStuck(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        stuck
-          ? "border-b border-rule/70 bg-cream/80 backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent"
-      }`}
-    >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-8">
+    <header className="fixed inset-x-0 top-4 z-50 px-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 rounded-full border border-black/5 bg-paper py-2.5 pr-2.5 pl-5 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25)] sm:py-3 sm:pr-3 sm:pl-7">
         <Link to="/" className="text-2xl font-extrabold tracking-[-0.06em] sm:text-[1.7rem]">
           BBI
         </Link>

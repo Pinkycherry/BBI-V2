@@ -54,6 +54,12 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        {/* Entrances start at opacity 0 and are switched on by an observer.
+            If the script never runs, this leaves the page fully readable
+            rather than blank. */}
+        <noscript>
+          <style>{`.reveal,.reveal-hero{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
         {children}
         <Scripts />
       </body>

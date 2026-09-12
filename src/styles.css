@@ -250,20 +250,28 @@
    readable text on the page.
    ----------------------------------------------------------------------- */
 
+/* Entrance: opacity + a 12px rise over ~580ms, ease-out, once only, never
+   reversed on the way back up. Siblings stagger 65ms apart. */
 .reveal {
-  clip-path: inset(0 0 14% 0);
-  transform: translateY(14px);
-  opacity: 0.001;
+  opacity: 0;
+  transform: translateY(12px);
   transition:
-    clip-path 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.5s ease;
+    opacity 0.58s cubic-bezier(0, 0, 0.2, 1),
+    transform 0.58s cubic-bezier(0, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .reveal.is-in {
-  clip-path: inset(0 0 0 0);
-  transform: none;
   opacity: 1;
+  transform: none;
+}
+
+/* The hero's own load sequence is slower and travels further. */
+.reveal-hero {
+  transform: translateY(16px);
+  transition:
+    opacity 0.7s cubic-bezier(0, 0, 0.2, 1),
+    transform 0.7s cubic-bezier(0, 0, 0.2, 1);
 }
 
 @keyframes marquee-left {
@@ -275,17 +283,19 @@
   }
 }
 
+/* Both tracks loop leftward on an ease-in-out curve rather than a linear one,
+   so each cycle accelerates out and settles back — the reference's signature,
+   and the reason its marquee does not read as a constant-speed conveyor. */
 .marquee-track {
   display: flex;
   width: max-content;
-  animation: marquee-left 46s linear infinite;
+  animation: marquee-left 6s ease-in-out infinite;
 }
 
-/* The feature ticker carries more weight per card, so it runs slower. */
 .ticker-track {
   display: flex;
   width: max-content;
-  animation: marquee-left 64s linear infinite;
+  animation: marquee-left 5s ease-in-out infinite;
 }
 
 .marquee:hover .marquee-track,
@@ -312,26 +322,61 @@
   opacity: 1;
 }
 
-/* Photo strip: the image scales inside a fixed frame, never the frame. */
-.zoom-frame {
-  overflow: hidden;
+/* Photo cards sit slightly off true and lift, shift and straighten under the
+   cursor — the reference moves the whole card rather than scaling the image
+   inside it. Alternate cards tilt the other way via .tilt-b. */
+.tilt {
+  transform: translateY(-35px) translateX(15px) rotate(2deg);
+  transition:
+    transform 0.5s cubic-bezier(0, 0, 0.2, 1),
+    box-shadow 0.3s ease;
 }
 
-.zoom-frame img {
-  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+.tilt-b {
+  transform: translateY(-15px) translateX(-12px) rotate(-2deg);
 }
 
-.zoom-frame:hover img {
-  transform: scale(1.06);
+.tilt:hover {
+  transform: translateY(-55px) translateX(25px) rotate(0deg);
+  box-shadow: 0 26px 54px -18px rgb(22 22 26 / 0.42);
 }
 
-/* Arrow nudge on text links. */
+.tilt-b:hover {
+  transform: translateY(-35px) translateX(-22px) rotate(0deg);
+}
+
+/* Arrow nudge, plus the wipe-in underline the reference uses on text links. */
 .nudge svg {
-  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: transform 0.22s cubic-bezier(0, 0, 0.2, 1);
 }
 
 .nudge:hover svg {
   transform: translateX(5px);
+}
+
+.underline-wipe {
+  position: relative;
+}
+
+.underline-wipe::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -3px;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.underline-wipe:hover::after {
+  transform: scaleX(1);
+}
+
+/* The closing call to action glows rather than merely lifting. */
+.pill-coral.glow:hover {
+  box-shadow: 0 0 42px rgb(255 116 72 / 0.55);
 }
 
 /* Accordion: animates height without measuring it in JavaScript. */
@@ -339,8 +384,8 @@
   display: grid;
   grid-template-rows: 0fr;
   transition:
-    grid-template-rows 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.3s ease;
+    grid-template-rows 0.28s cubic-bezier(0, 0, 0.2, 1),
+    opacity 0.2s ease;
   opacity: 0;
 }
 
@@ -358,8 +403,8 @@
     scroll-behavior: auto;
   }
 
-  .reveal {
-    clip-path: none;
+  .reveal,
+  .reveal-hero {
     transform: none;
     opacity: 1;
     transition: none;
@@ -374,12 +419,19 @@
     transition: none;
   }
 
-  .zoom-frame img,
-  .nudge svg {
+  .tilt,
+  .nudge svg,
+  .underline-wipe::after {
     transition: none;
   }
 
-  .zoom-frame:hover img,
+  .tilt,
+  .tilt-b,
+  .tilt:hover,
+  .tilt-b:hover {
+    transform: none;
+  }
+
   .nudge:hover svg {
     transform: none;
   }
