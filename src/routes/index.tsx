@@ -1,15 +1,27 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowUpRight, Check, ChevronDown } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  ArrowUpRight,
+  Banknote,
+  Check,
+  ChevronDown,
+  Clock,
+  Gavel,
+  Search,
+  Users,
+  Wallet,
+} from "lucide-react";
 
 import { catalogQuery, getTrendingIdeas, type CategoryNode } from "../lib/ideas.functions";
-import { typeGroups } from "../lib/catalog-display";
-import { categoryImage } from "../config/category-imagery";
+import { categoryImage, GENERIC } from "../config/category-imagery";
 import { SiteShell } from "../components/site-shell";
 import { IdeaCard } from "../components/idea-card";
 import { WaveDivider } from "../components/wave-divider";
 import { Reveal } from "../components/reveal";
+import { CountUp } from "../components/count-up";
 
 const trendingQuery = queryOptions({
   queryKey: ["trending"],
@@ -26,74 +38,71 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-/* The four questions every blueprint answers. Taken verbatim from the product
-   definition — this is the mechanism, not marketing copy written for a grid. */
-const FOUR_ANSWERS = [
-  {
-    title: "Who specifically will pay you.",
-    body: "Not “small businesses”. A named buyer with a reason to hand over money, and where they already are.",
-  },
-  {
-    title: "How the money actually works.",
-    body: "What you charge, how often, what it costs you to deliver, and what has to be true for the margin to survive.",
-  },
-  {
-    title: "What will hurt in year one.",
-    body: "The part most idea lists skip. The obstacle you hit in month three, written down before you hit it.",
-  },
-  {
-    title: "A straight founder-fit verdict.",
-    body: "Including “do not build this one.” A library that never says no is a list, not research.",
-  },
+/* The reader's path through one blueprint. These are the real sections of an
+   idea page, in the order the page renders them — not invented steps. */
+const STEPS = [
+  { n: "01", label: "Browse" },
+  { n: "02", label: "Buyer" },
+  { n: "03", label: "Money" },
+  { n: "04", label: "Risk" },
+  { n: "05", label: "Verdict" },
+] as const;
+
+/* Every one of these is a real column on the `ideas` table. */
+const FEATURES = [
+  { icon: Users, title: "Who actually pays you", body: "A named buyer, not a market segment." },
+  { icon: Banknote, title: "How the money works", body: "What you charge and what it costs." },
+  { icon: AlertTriangle, title: "What hurts in year one", body: "The obstacle, written down first." },
+  { icon: Gavel, title: "Founder-fit verdict", body: "Including “do not build this one.”" },
+  { icon: Wallet, title: "Startup cost", body: "What it takes to get off the ground." },
+  { icon: Clock, title: "Time to first customer", body: "How long before anyone pays." },
+] as const;
+
+const COMPARISON_COLUMNS = [
+  "A free ideas listicle",
+  "A paid course",
+  "Working it out alone",
 ] as const;
 
 const COMPARISON = [
   {
     n: "01",
     label: "Who pays you",
-    listicle: "A category, if you're lucky.",
-    course: "Your homework, after you buy.",
-    alone: "You guess, then find out.",
+    others: ["A category, if you're lucky.", "Your homework, after you buy.", "You guess, then find out."],
     bbi: "A named buyer, on every blueprint.",
   },
   {
     n: "02",
     label: "How the money works",
-    listicle: "“Monetise with ads or subscriptions.”",
-    course: "A pricing framework to apply yourself.",
-    alone: "Worked out after the first invoice.",
+    others: [
+      "“Monetise with ads or subscriptions.”",
+      "A pricing framework to apply yourself.",
+      "Worked out after the first invoice.",
+    ],
     bbi: "The actual mechanics, per idea.",
   },
   {
     n: "03",
     label: "Year-one risk",
-    listicle: "Rarely mentioned.",
-    course: "Usually the upsell.",
-    alone: "Discovered the expensive way.",
+    others: ["Rarely mentioned.", "Usually the upsell.", "Discovered the expensive way."],
     bbi: "Written down before you start.",
   },
   {
     n: "04",
     label: "When to walk away",
-    listicle: "Never — the list wants length.",
-    course: "Never — the course wants a sale.",
-    alone: "Months later, after the spend.",
+    others: ["Never — the list wants length.", "Never — the course wants a sale.", "Months later, after the spend."],
     bbi: "Stated plainly, idea by idea.",
   },
   {
     n: "05",
     label: "What it costs to read",
-    listicle: "Your email address.",
-    course: "Paid up front.",
-    alone: "Your time, then your savings.",
+    others: ["Your email address.", "Paid up front.", "Your time, then your savings."],
     bbi: "Nothing. No account, no email.",
   },
   {
     n: "06",
     label: "What you leave with",
-    listicle: "Twenty tabs open.",
-    course: "A framework, no decision.",
-    alone: "A hunch.",
+    others: ["Twenty tabs open.", "A framework, no decision.", "A hunch."],
     bbi: "One real candidate, or a clear no.",
   },
 ] as const;
@@ -125,6 +134,22 @@ const FAQS = [
   },
 ] as const;
 
+const CHIPS = [
+  "Zero investment",
+  "Low investment",
+  "Passive income",
+  "Side hustle",
+  "Work from home",
+  "Evergreen",
+  "AI & automation",
+  "Tech & SaaS",
+  "FinTech",
+  "E-commerce",
+  "Education",
+  "Health & fitness",
+  "Creator & media",
+] as const;
+
 function HomePage() {
   const { data: catalog } = useQuery(catalogQuery);
   const { data: trending } = useQuery(trendingQuery);
@@ -137,8 +162,9 @@ function HomePage() {
     <SiteShell>
       <Hero totalIdeas={totalIdeas} />
       <CategoryMarquee categories={categories} />
-      <CollageSection categories={categories} totalCategories={totalCategories} />
-      <FourAnswers />
+      <PhotoStrip categories={categories} />
+      <FullBleedCallout totalCategories={totalCategories} />
+      <FeatureTicker totalIdeas={totalIdeas} />
       <DarkBand
         totalIdeas={totalIdeas}
         totalCategories={totalCategories}
@@ -147,74 +173,125 @@ function HomePage() {
       <WaveDivider />
       <ComparisonSection />
       <FaqSection />
-      <ClosingSplit categories={categories} />
+      <CtaBand />
+      <ChipCloud />
+      <KeepExploring />
     </SiteShell>
   );
 }
 
-/* ---------------------------------------------------------------- hero ---- */
+/* --------------------------------------------------------- 2. hero -------- */
 
 function Hero({ totalIdeas }: { totalIdeas: number }) {
+  const navigate = useNavigate();
+  const [term, setTerm] = useState("");
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const q = term.trim();
+    if (q) void navigate({ to: "/search", search: { q } });
+  }
+
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 sm:pt-44 sm:pb-28">
+    <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24">
       <div aria-hidden className="grid-field grid-field-fade absolute inset-0" />
 
-      <div className="relative mx-auto max-w-5xl px-4 text-center">
-        {totalIdeas > 0 ? (
-          <Reveal>
-            {/* whitespace-normal so this does not run off a 390px screen,
-                which `.pill`'s nowrap default would otherwise cause. */}
+      <div className="relative mx-auto max-w-6xl px-4">
+        <Reveal>
+          <p className="text-center text-[clamp(2.4rem,7vw,5.5rem)] leading-[0.92] font-extrabold tracking-[-0.055em]">
+            IDEA<span className="accent">.</span>CHECKED<span className="accent">.</span>
+          </p>
+        </Reveal>
+
+        {/* The five sections of a blueprint, in page order. */}
+        <Reveal delay={80}>
+          <ol className="mx-auto mt-8 flex max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:gap-x-10">
+            {STEPS.map((s) => (
+              <li key={s.n} className="flex items-baseline gap-2">
+                <span className="text-xs font-semibold text-coral tabular-nums">{s.n}</span>
+                <span className="text-sm font-medium text-ink-soft">{s.label}</span>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
+
+        <div className="mt-14 text-center">
+          <Reveal delay={120}>
             <span className="pill pill-ink max-w-full text-center text-sm whitespace-normal">
-              {totalIdeas} researched blueprints · free to read
+              <Check className="h-4 w-4 shrink-0 text-coral" />
+              Reviewed before launch by 967 founders
             </span>
           </Reveal>
-        ) : null}
 
-        <Reveal delay={80}>
-          <h1 className="t-display mt-7">
-            From idea,
-            <br />
-            <span className="accent">to straight answer.</span>
-          </h1>
-        </Reveal>
+          <Reveal delay={180}>
+            <h1 className="t-display mt-7">
+              From idea,
+              <br />
+              <span className="accent">to straight answer.</span>
+            </h1>
+          </Reveal>
 
-        <Reveal delay={160}>
-          <p className="mt-7 text-xl font-semibold sm:text-2xl">
-            A free library of researched business ideas.
-          </p>
-          <p className="t-lead mx-auto mt-4 max-w-2xl">
-            Who specifically will pay you. How the money actually works. What will hurt in year
-            one. And a straight verdict on whether you should build it at all.
-          </p>
-        </Reveal>
+          <Reveal delay={240}>
+            <p className="mt-7 text-xl font-semibold sm:text-2xl">
+              A free library of researched business ideas.
+            </p>
+            <p className="t-lead mx-auto mt-4 max-w-2xl">
+              {totalIdeas > 0 ? `${totalIdeas} blueprints. ` : ""}Who specifically will pay you.
+              How the money actually works. What will hurt in year one. And a straight verdict on
+              whether you should build it at all.
+            </p>
+          </Reveal>
 
-        <Reveal delay={240}>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link to="/browse" className="pill pill-coral">
-              Browse the library
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <Link to="/search" className="pill pill-quiet">
-              Search every blueprint
-            </Link>
-          </div>
-          <p className="mt-5 text-sm text-ink-faint">
-            No account. No email. No payment to read one.
-          </p>
-        </Reveal>
+          {/* The prompt field: a real search, not a picture of one. */}
+          <Reveal delay={300}>
+            <div className="mt-10 flex flex-col items-center justify-center gap-3 lg:flex-row">
+              <Link to="/browse" className="pill pill-coral shrink-0 px-7 py-4 text-base">
+                Browse the library
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+
+              <form
+                onSubmit={onSubmit}
+                className="card flex w-full max-w-lg items-center gap-3 rounded-full py-2 pr-2 pl-5"
+              >
+                <Search className="h-5 w-5 shrink-0 text-ink-faint" />
+                <label htmlFor="hero-q" className="sr-only">
+                  Search the library
+                </label>
+                <input
+                  id="hero-q"
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  placeholder="business ideas I can start with no money"
+                  className="w-full bg-transparent py-2.5 text-[0.95rem] focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-transform hover:scale-105"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+            <p className="mt-5 text-sm text-ink-faint">
+              No account. No email. No payment to read one.
+            </p>
+          </Reveal>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ----------------------------------------------------------- marquee ------ */
+/* ------------------------------------------------ 3. category marquee ----- */
 
 function CategoryMarquee({ categories }: { categories: CategoryNode[] }) {
   if (categories.length === 0) return null;
   const loop = [...categories, ...categories];
 
   return (
-    <section className="pb-16 sm:pb-24">
+    <section className="pb-16 sm:pb-20">
       <p className="t-eyebrow mb-5 text-center">Browse by category</p>
       <div className="marquee marquee-mask overflow-hidden">
         <div className="marquee-track gap-3 pr-3">
@@ -223,7 +300,7 @@ function CategoryMarquee({ categories }: { categories: CategoryNode[] }) {
               key={`${c.categorySlug}-${i}`}
               to="/category/$categorySlug"
               params={{ categorySlug: c.categorySlug }}
-              className="flex shrink-0 items-center gap-2 rounded-full border border-rule bg-paper px-5 py-2.5 text-[0.95rem] font-medium transition-colors hover:border-coral hover:text-coral"
+              className="dim-until-hover flex shrink-0 items-center gap-2 rounded-full border border-rule bg-paper px-5 py-2.5 text-[0.95rem] font-medium hover:border-coral hover:text-coral"
             >
               {c.categoryName}
               <span className="text-sm text-ink-faint tabular-nums">{c.ideaCount}</span>
@@ -235,112 +312,119 @@ function CategoryMarquee({ categories }: { categories: CategoryNode[] }) {
   );
 }
 
-/* ----------------------------------------------------------- collage ------ */
+/* --------------------------------------------------- 4. photo strip ------- */
 
-/* Hand-placed, not generated. Every mount stays inside the outer quarter of
-   the stage on its own side: the heading column sits in the middle and a
-   scattered placement kept dropping a photo on top of the words. */
-const COLLAGE = [
-  "left-[1%] top-[4%] w-[14%] -rotate-6",
-  "left-[9%] top-[34%] w-[13%] rotate-3",
-  "left-[2%] top-[62%] w-[14%] -rotate-2",
-  "right-[1%] top-[5%] w-[14%] rotate-5",
-  "right-[9%] top-[35%] w-[13%] -rotate-3",
-  "right-[2%] top-[63%] w-[14%] rotate-2",
-] as const;
-
-function CollageSection({
-  categories,
-  totalCategories,
-}: {
-  categories: CategoryNode[];
-  totalCategories: number;
-}) {
+function PhotoStrip({ categories }: { categories: CategoryNode[] }) {
   const picks = categories.slice(0, 6);
+  if (picks.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-cream via-cream to-peri-wash px-4 py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl">
-        <div className="relative flex items-center justify-center lg:min-h-[44rem]">
-          <div className="relative z-10 mx-auto max-w-xl text-center">
-            <Reveal>
-              <h2 className="t-section">
-                Every category,
-                <br />
-                <span className="accent">researched the same way.</span>
-              </h2>
-              <p className="t-lead mt-5">
-                {totalCategories} categories, from zero-investment to SaaS. Same four questions
-                answered in every one.
-              </p>
-              <Link to="/browse" className="pill pill-coral mt-8">
-                See all {totalCategories} categories
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Reveal>
-          </div>
-
-          {/* Desktop: mounts pinned to the outer quarter on each side. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 hidden lg:block">
-            {picks.map((c, i) => {
-              const pos = COLLAGE[i];
-              if (!pos) return null;
-              const img = categoryImage(c.categorySlug);
-              return (
-                <div key={c.categorySlug} className={`mount absolute aspect-[3/4] ${pos}`}>
-                  <img src={img.src} alt="" loading="lazy" />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Phone and tablet: the same photos as a plain, readable strip. */}
-        <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:hidden">
-          {picks.map((c) => {
-            const img = categoryImage(c.categorySlug);
-            return (
-              <Link
-                key={c.categorySlug}
-                to="/category/$categorySlug"
-                params={{ categorySlug: c.categorySlug }}
-                className="mount block aspect-[4/5]"
-              >
-                <img src={img.src} alt={img.alt} loading="lazy" />
-              </Link>
-            );
-          })}
-        </div>
+    <section className="pb-20 sm:pb-28">
+      <div className="flex gap-3 overflow-x-auto px-4 pb-2 sm:gap-4 lg:justify-center">
+        {picks.map((c) => {
+          const img = categoryImage(c.categorySlug);
+          return (
+            <Link
+              key={c.categorySlug}
+              to="/category/$categorySlug"
+              params={{ categorySlug: c.categorySlug }}
+              className="zoom-frame group relative w-[62vw] shrink-0 rounded-[var(--radius-card)] sm:w-[38vw] lg:w-[13.25rem]"
+            >
+              <div className="aspect-[3/4]">
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-4 pt-10">
+                <p className="font-semibold text-white">{c.categoryName}</p>
+                <p className="text-sm text-white/75">{c.ideaCount} blueprints</p>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-/* ------------------------------------------------------ four answers ------ */
+/* ---------------------------------------------- 5. full-bleed callout ----- */
 
-function FourAnswers() {
+function FullBleedCallout({ totalCategories }: { totalCategories: number }) {
   return (
-    <section className="bg-peri-wash px-4 pt-4 pb-20 sm:pb-28">
-      <div className="mx-auto max-w-6xl">
-        <Reveal>
-          <h2 className="t-section max-w-3xl">
-            Every blueprint answers
-            <br />
-            <span className="accent">the same four things.</span>
-          </h2>
-        </Reveal>
+    <section className="relative isolate overflow-hidden px-4 py-28 text-center sm:py-40">
+      <img
+        src={GENERIC.src}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 -z-10 h-full w-full object-cover"
+      />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-black/55" />
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2">
-          {FOUR_ANSWERS.map((item, i) => (
-            <Reveal key={item.title} delay={i * 70}>
-              <article className="card card-lift h-full p-8">
-                <p className="text-sm font-semibold text-coral tabular-nums">
-                  {String(i + 1).padStart(2, "0")}
+      <Reveal>
+        <h2 className="t-section mx-auto max-w-3xl text-white">
+          Every category,
+          <br />
+          <span className="accent">researched the same way.</span>
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-lg text-white/80">
+          {totalCategories} categories, from zero-investment to SaaS. The same four questions
+          answered in every single one.
+        </p>
+        <Link to="/browse" className="pill pill-coral mt-9 px-7 py-4 text-base">
+          See all {totalCategories} categories
+          <ArrowUpRight className="h-4 w-4" />
+        </Link>
+      </Reveal>
+    </section>
+  );
+}
+
+/* ------------------------------------------------ 6. feature ticker ------- */
+
+function FeatureTicker({ totalIdeas }: { totalIdeas: number }) {
+  /* Duplicated so the track can loop seamlessly at -50%. */
+  const sets = [0, 1];
+
+  return (
+    <section className="bg-peri-wash py-20 sm:py-28">
+      <div className="mx-auto max-w-6xl px-4">
+        <Reveal>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <h2 className="t-card">Every blueprint names a real buyer.</h2>
+            <h2 className="t-card">
+              And says <span className="accent">when to walk away.</span>
+            </h2>
+          </div>
+        </Reveal>
+      </div>
+
+      <div className="marquee marquee-mask mt-12 overflow-hidden">
+        <div className="ticker-track items-start gap-4 pr-4">
+          {sets.map((set) => (
+            <div key={set} className="flex items-start gap-4" aria-hidden={set === 1}>
+              <article className="card w-[21rem] shrink-0 p-7">
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-ink-soft">
+                  <span aria-hidden className="h-2 w-2 rounded-full bg-coral" />
+                  Live · {totalIdeas} blueprints
+                </span>
+                <h3 className="t-card mt-4">Momentum, per niche</h3>
+                <p className="t-lead mt-3">
+                  Every blueprint carries a demand score for its own micro-niche, not the broad
+                  category it sits in.
                 </p>
-                <h3 className="t-card mt-3">{item.title}</h3>
-                <p className="t-lead mt-3">{item.body}</p>
               </article>
-            </Reveal>
+
+              {FEATURES.map((f) => (
+                <article key={f.title} className="card card-lift w-[17rem] shrink-0 p-6">
+                  <f.icon className="h-5 w-5 text-ink-faint" aria-hidden />
+                  <h3 className="mt-4 font-semibold">{f.title}</h3>
+                  <p className="mt-1.5 text-[0.95rem] leading-relaxed text-ink-soft">{f.body}</p>
+                </article>
+              ))}
+            </div>
           ))}
         </div>
       </div>
@@ -348,7 +432,7 @@ function FourAnswers() {
   );
 }
 
-/* -------------------------------------------------------- dark band ------- */
+/* ----------------------------------------- 7 + 8. dark band and stats ----- */
 
 function DarkBand({
   totalIdeas,
@@ -364,15 +448,15 @@ function DarkBand({
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <span className="inline-flex items-center gap-2 rounded-full border border-coral/50 px-4 py-2 text-sm text-white/90 shadow-[0_0_30px_-6px_rgb(255_107_69/0.55)]">
-            Free to read · no account needed
+            Free for everyone · no card, ever
           </span>
         </Reveal>
 
         <Reveal delay={80}>
           <h2 className="t-section mt-8 max-w-3xl text-white">
-            The whole library.
+            Get the whole library,
             <br />
-            <span className="accent">No paywall to look.</span>
+            <span className="accent">out of the box.</span>
           </h2>
           <p className="t-lead mt-5 max-w-xl text-white/65">
             Validating an idea elsewhere costs money you were going to start the business with.
@@ -381,25 +465,27 @@ function DarkBand({
         </Reveal>
 
         <Reveal delay={140}>
-          <div className="mt-7 flex flex-wrap gap-2.5">
-            <span className="pill-dark rounded-full">No signup</span>
-            <span className="pill-dark rounded-full">No email</span>
-            <span className="pill-dark rounded-full">No card</span>
-          </div>
-          <Link to="/browse" className="pill pill-coral mt-8">
+          <ul className="mt-7 flex flex-wrap gap-2.5">
+            {["Free to read", "No account", "No email"].map((b) => (
+              <li key={b} className="pill-dark rounded-full">
+                {b}
+              </li>
+            ))}
+          </ul>
+          <Link to="/browse" className="pill pill-coral mt-8 px-7 py-4 text-base">
             Browse the library
             <ArrowUpRight className="h-4 w-4" />
           </Link>
         </Reveal>
 
         {/* Three real figures. The 967 is a one-time pre-launch count and the
-            label says so — it is not presented as a live metric. */}
+            line beneath says so — it is not presented as a live metric. */}
         <div className="mt-20 text-center">
           <p className="t-eyebrow text-white/45">The story so far</p>
           <div className="mt-8 grid gap-10 sm:grid-cols-3">
-            <Stat value={totalIdeas > 0 ? String(totalIdeas) : "—"} label="Researched blueprints" />
-            <Stat value={totalCategories > 0 ? String(totalCategories) : "—"} label="Categories" />
-            <Stat value="967" label="Founders in the pre-launch review group" />
+            <Stat value={totalIdeas} label="Researched blueprints" />
+            <Stat value={totalCategories} label="Categories" />
+            <Stat value={967} label="Founders in the pre-launch review group" />
           </div>
           <p className="mt-6 text-sm text-white/40">
             The review group is a one-time count recorded before launch, not a live figure.
@@ -421,18 +507,22 @@ function DarkBand({
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div>
-      <p className="text-6xl font-extrabold tracking-[-0.04em] tabular-nums sm:text-7xl">{value}</p>
+      <p className="text-6xl font-extrabold tracking-[-0.04em] tabular-nums sm:text-7xl">
+        <CountUp value={value} />
+      </p>
       <p className="mt-3 text-white/60">{label}</p>
     </div>
   );
 }
 
-/* ------------------------------------------------------- comparison ------- */
+/* --------------------------------------------- 9. comparison + tabs ------- */
 
 function ComparisonSection() {
+  const [active, setActive] = useState(0);
+
   return (
     <section className="px-4 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl">
@@ -444,19 +534,42 @@ function ComparisonSection() {
           </h2>
         </Reveal>
 
+        {/* Tabs pick which comparison column is emphasised. On a phone they
+            choose the single column shown, since four will not fit. */}
+        <div className="mt-9 flex flex-wrap gap-2.5">
+          {COMPARISON_COLUMNS.map((label, i) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setActive(i)}
+              aria-pressed={active === i}
+              className={`pill ${active === i ? "pill-ink" : "pill-quiet"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <Reveal delay={80}>
-          <div className="card mt-12 overflow-hidden">
-            <div className="min-w-[52rem] lg:min-w-0">
-              <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr_1.2fr] items-end gap-px px-6 pt-7 pb-5 text-sm sm:px-8">
+          <div className="card mt-8 overflow-x-auto">
+            <div className="min-w-[48rem]">
+              <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr_1.2fr] px-6 pt-7 pb-5 text-sm sm:px-8">
                 <p className="text-ink-faint">
                   From idea
                   <br />
                   to decision.
                 </p>
-                <p className="font-semibold">A free ideas listicle</p>
-                <p className="font-semibold">A paid course</p>
-                <p className="font-semibold">Working it out alone</p>
-                <div className="rounded-t-2xl bg-peri-wash px-4 pt-4 pb-2">
+                {COMPARISON_COLUMNS.map((label, i) => (
+                  <p
+                    key={label}
+                    className={`pr-4 font-semibold transition-opacity ${
+                      active === i ? "opacity-100" : "opacity-45"
+                    }`}
+                  >
+                    {label}
+                  </p>
+                ))}
+                <div className="self-end rounded-t-2xl bg-peri-wash px-4 pt-4 pb-2">
                   <p className="t-eyebrow text-ink-soft">One library</p>
                   <p className="mt-1 text-lg font-extrabold tracking-[-0.04em]">BBI</p>
                 </div>
@@ -465,17 +578,24 @@ function ComparisonSection() {
               {COMPARISON.map((row, i) => (
                 <div
                   key={row.n}
-                  className={`grid grid-cols-[1.1fr_1fr_1fr_1fr_1.2fr] gap-px px-6 text-[0.95rem] sm:px-8 ${
-                    i % 2 === 0 ? "bg-black/[0.025]" : ""
-                  }`}
+                  className="group grid grid-cols-[1.1fr_1fr_1fr_1fr_1.2fr] px-6 text-[0.95rem] transition-colors hover:bg-black/[0.035] sm:px-8"
                 >
                   <div className="py-5 pr-4">
                     <p className="text-sm text-ink-faint tabular-nums">{row.n}</p>
                     <p className="mt-1 font-semibold">{row.label}</p>
                   </div>
-                  <p className="py-5 pr-4 text-ink-soft">{row.listicle}</p>
-                  <p className="py-5 pr-4 text-ink-soft">{row.course}</p>
-                  <p className="py-5 pr-4 text-ink-soft">{row.alone}</p>
+
+                  {row.others.map((cell, j) => (
+                    <p
+                      key={cell}
+                      className={`py-5 pr-4 text-ink-soft transition-opacity ${
+                        active === j ? "opacity-100" : "opacity-45"
+                      }`}
+                    >
+                      {cell}
+                    </p>
+                  ))}
+
                   <div
                     className={`flex items-start gap-2.5 bg-peri-wash px-4 py-5 ${
                       i === COMPARISON.length - 1 ? "rounded-b-2xl" : ""
@@ -489,19 +609,12 @@ function ComparisonSection() {
             </div>
           </div>
         </Reveal>
-
-        <div className="mt-8 flex justify-end">
-          <Link to="/browse" className="pill pill-coral">
-            Start browsing
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </div>
       </div>
     </section>
   );
 }
 
-/* -------------------------------------------------------------- faq ------- */
+/* ------------------------------------------------------- 10. faq ---------- */
 
 function FaqSection() {
   const [open, setOpen] = useState<number | null>(0);
@@ -528,12 +641,16 @@ function FaqSection() {
               >
                 <span className="text-lg font-semibold">{item.q}</span>
                 <ChevronDown
-                  className={`h-5 w-5 shrink-0 text-ink-faint transition-transform ${
+                  className={`h-5 w-5 shrink-0 text-ink-faint transition-transform duration-300 ${
                     open === i ? "rotate-180" : ""
                   }`}
                 />
               </button>
-              {open === i ? <p className="t-lead -mt-1 max-w-3xl pb-7">{item.a}</p> : null}
+              <div className={`acc-panel ${open === i ? "is-open" : ""}`}>
+                <div>
+                  <p className="t-lead max-w-3xl pb-7">{item.a}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -542,45 +659,65 @@ function FaqSection() {
   );
 }
 
-/* ---------------------------------------------------------- closing ------- */
+/* --------------------------------------------------- 11. cta band --------- */
 
-function ClosingSplit({ categories }: { categories: CategoryNode[] }) {
+function CtaBand() {
   return (
-    <section className="px-4 pt-12 pb-24 sm:pb-32">
-      <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-2">
+    <section className="px-4 py-20 text-center sm:py-24">
+      <Reveal>
+        <h2 className="t-section mx-auto max-w-2xl">
+          You bring <span className="accent">the hustle.</span>
+        </h2>
+        <Link to="/browse" className="pill pill-coral mt-9 px-7 py-4 text-base">
+          Browse the library
+          <ArrowUpRight className="h-4 w-4" />
+        </Link>
+      </Reveal>
+    </section>
+  );
+}
+
+/* -------------------------------------------------- 12. chip cloud -------- */
+
+function ChipCloud() {
+  return (
+    <section className="px-4 pb-20 sm:pb-24">
+      <div className="mx-auto max-w-4xl text-center">
         <Reveal>
           <h2 className="t-section">
-            You bring
-            <br />
-            <span className="accent">the hustle.</span>
+            We bring <span className="accent">the homework.</span>
           </h2>
-          <Link to="/browse" className="pill pill-coral mt-8">
-            Browse the library
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
         </Reveal>
 
-        <Reveal delay={100}>
-          <h2 className="t-section">
-            We bring
-            <br />
-            <span className="accent">the homework.</span>
-          </h2>
-          <div className="mt-8 flex flex-wrap gap-2.5">
-            {typeGroups(categories)
-              .flatMap((g) => g.categories)
-              .map((c) => (
-                <Link
-                  key={c.categorySlug}
-                  to="/category/$categorySlug"
-                  params={{ categorySlug: c.categorySlug }}
-                  className="pill-quiet rounded-full"
-                >
-                  {c.categoryName}
-                </Link>
-              ))}
-          </div>
-        </Reveal>
+        <div className="mt-9 flex flex-wrap justify-center gap-2.5">
+          {CHIPS.map((chip, i) => (
+            <Reveal key={chip} delay={i * 35}>
+              <span className="pill-quiet rounded-full">{chip}</span>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------- 13. keep exploring -------- */
+
+function KeepExploring() {
+  return (
+    <section className="px-4 pb-24">
+      <div className="mx-auto max-w-6xl border-t border-rule pt-10">
+        <p className="t-eyebrow">Keep exploring</p>
+        <div className="mt-4 flex flex-wrap gap-x-10 gap-y-3">
+          <Link to="/browse" className="nudge inline-flex items-center gap-2 text-lg font-medium">
+            Browse every category
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+          <Link to="/search" className="nudge inline-flex items-center gap-2 text-lg font-medium">
+            Search every blueprint
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+        </div>
       </div>
     </section>
   );
